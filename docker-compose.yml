@@ -1,0 +1,61 @@
+services:
+  andromeda.api:
+    container_name: Andromeda.API
+    image: andromeda-api
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+      - 8081:8081
+    depends_on:
+      andromeda.database:
+        condition: service_healthy
+      andromeda.cache:
+        condition: service_healthy
+    environment:
+      - ConnectionStrings__Database=Host=andromeda.database;Port=5432;Database=${DB_DATABASE};Username:${DB_USER};Password=${DB_PASSWORD};Include Error Details=true
+      - ConnectionStrings__Cache=andromeda.cache:6379,password=${CACHE_PASSWORD}
+    restart: always
+
+  andromeda.database:
+    container_name: Andromeda.Database
+    image: postgres:18-alpine
+    environment:
+      - POSTGRES_DB=${DB_DATABASE}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - ./.containers/database:/var/lib/postgresql
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_DATABASE}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
+
+  andromeda.cache:
+    container_name: Andromeda.Cache
+    image: redis:8-alpine
+    command: redis-server --requirepass ${CACHE_PASSWORD}
+    restart: always
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "${CACHE_PASSWORD}", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  andromeda.web:
+    container_name: Andromeda.Web
+    image: andromeda-web
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - andromeda.api

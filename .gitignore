@@ -1,36 +1,111 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ==========================================
+# Environment files
+# ==========================================
+.env
+.env.*
+!.env.example
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
 
-# testing
-/coverage
+# ==========================================
+# Docker
+# ==========================================
+.containers/
 
-# next.js
-/.next/
-/out/
+# Docker override / local files
+docker-compose.override.yml
 
-# production
-/build
 
-# misc
-.DS_Store
-*.pem
+# ==========================================
+# Node / Next.js
+# ==========================================
+**/node_modules/
 
-# debug
+**/.next/
+**/out/
+
+**/build/
+**/dist/
+
+**/.pnp
+**/.pnp.*
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# local env files
-.env*.local
-.env
 
-# vercel
-.vercel
+# ==========================================
+# TypeScript
+# ==========================================
+**/*.tsbuildinfo
+**/next-env.d.ts
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+
+# ==========================================
+# .NET / ASP.NET Core
+# ==========================================
+**/bin/
+**/obj/
+
+**/[Dd]ebug/
+**/[Rr]elease/
+
+artifacts/
+
+*.nupkg
+*.snupkg
+
+project.lock.json
+project.fragment.lock.json
+
+ScaffoldingReadMe.txt
+
+CodeCoverage/
+
+*.binlog
+
+TestResult.xml
+**/TestResults/
+
+
+# ==========================================
+# IDEs
+# ==========================================
+.vs/
+.vscode/
+.idea/
+
+**/*.user
+**/*.suo
+*.DotSettings.user
+
+
+# ==========================================
+# Logs
+# ==========================================
+**/*.log
+logs/
+Logs/
+
+
+# ==========================================
+# OS Files
+# ==========================================
+.DS_Store
+Thumbs.db
+
+
+# ==========================================
+# Temporary files
+# ==========================================
+~$*
+*~
+
+*.pem
+
+
+# ==========================================
+# Coverage
+# ==========================================
+coverage/
