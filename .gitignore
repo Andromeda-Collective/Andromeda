@@ -16,60 +16,6 @@ docker-compose.override.yml
 
 
 # ==========================================
-# Node / Next.js
-# ==========================================
-**/node_modules/
-
-**/.next/
-**/out/
-
-**/build/
-**/dist/
-
-**/.pnp
-**/.pnp.*
-
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-
-# ==========================================
-# TypeScript
-# ==========================================
-**/*.tsbuildinfo
-**/next-env.d.ts
-
-
-# ==========================================
-# .NET / ASP.NET Core
-# ==========================================
-**/bin/
-**/obj/
-
-**/[Dd]ebug/
-**/[Rr]elease/
-
-artifacts/
-
-*.nupkg
-*.snupkg
-
-project.lock.json
-project.fragment.lock.json
-
-ScaffoldingReadMe.txt
-
-CodeCoverage/
-
-*.binlog
-
-TestResult.xml
-**/TestResults/
-
-
-# ==========================================
 # IDEs
 # ==========================================
 .vs/

@@ -1,0 +1,25 @@
+# ==========================================
+# .NET / ASP.NET Core
+# ==========================================
+**/bin/
+**/obj/
+
+**/[Dd]ebug/
+**/[Rr]elease/
+
+artifacts/
+
+*.nupkg
+*.snupkg
+
+project.lock.json
+project.fragment.lock.json
+
+ScaffoldingReadMe.txt
+
+CodeCoverage/
+
+*.binlog
+
+TestResult.xml
+**/TestResults/
