@@ -1,0 +1,28 @@
+services:
+  andromeda.api:
+    build:
+      target: build
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DOTNET_USE_POLLING_FILE_WATCHER=true
+    volumes:
+      - ./backend:/src
+    working_dir: /src
+    command: dotnet watch run --urls=http://0.0.0.0:8080 --non-interactive
+    ports:
+      - "8080:8080"
+
+  andromeda.web:
+    build:
+      target: deps
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+      - NEXT_DOCKER_DEV_POLLING=true
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    working_dir: /app
+    command: npm run dev -- --webpack

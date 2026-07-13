@@ -16,6 +16,7 @@ services:
     environment:
       - ConnectionStrings__Database=Host=andromeda.database;Port=5432;Database=${DB_DATABASE};Username:${DB_USER};Password=${DB_PASSWORD};Include Error Details=true
       - ConnectionStrings__Cache=andromeda.cache:6379,password=${CACHE_PASSWORD}
+      - JWTConfig__SecretKey=${SECRET_KEY}
     restart: always
 
   andromeda.database:
