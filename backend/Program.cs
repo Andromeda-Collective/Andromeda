@@ -1,9 +1,12 @@
 using System.Text;
 using Andromeda.Data;
+using Andromeda.Entities;
 using Andromeda.Exceptions;
 using Andromeda.Extensions;
+using Andromeda.Features.Auth;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -103,7 +106,49 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 #endregion
 
+#region Add Identity
+    
+    builder.Services
+        .AddIdentity<User, Role>(options =>
+        {
+            options.Password.RequiredLength = 8;
+
+            options.Password.RequireDigit = false;
+
+            options.Password.RequireUppercase = false;
+
+            options.Password.RequireLowercase = false;
+
+            options.Password.RequireNonAlphanumeric = false;
+
+            options.User.RequireUniqueEmail = true;
+
+            options.SignIn.RequireConfirmedAccount = false;
+
+            options.SignIn.RequireConfirmedEmail = false;
+
+            options.SignIn.RequireConfirmedPhoneNumber = false;
+        })
+        .AddEntityFrameworkStores<ApplicationDbContext>()
+        .AddDefaultTokenProviders();
+
+#endregion
+
+#region Add Services
+    
+    builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddScoped<ITokenService, TokenService>();
+
+#endregion
+
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    await scope.ServiceProvider.ApplyMigrationsAsync();
+    await SeedData.SeedAsync(scope.ServiceProvider);
+}
+
 
 if (app.Environment.IsDevelopment())
 {
@@ -130,7 +175,7 @@ app.UseAuthorization();
 
 app.UseExceptionHandler();
 
-app.Map("/", () => "Hello from koorosh again");
+
 app.MapEndpoints();
 
 app.Run();

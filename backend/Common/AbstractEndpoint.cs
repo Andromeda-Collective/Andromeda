@@ -5,10 +5,10 @@ namespace Andromeda.Common;
 
 public abstract class AbstractEndpoint
 {
-    public abstract void MapEndpoint(IEndpointRouteBuilder app);
+    public abstract void MapEndpoints(IEndpointRouteBuilder app);
 
 
-    public IResult HandleFailure(Result result) =>
+    public static IResult HandleFailure(Result result) =>
     result switch
     {
         { IsSuccess: true } => throw new InvalidOperationException(),
