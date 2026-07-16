@@ -109,7 +109,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 #region Add Identity
     
     builder.Services
-        .AddIdentity<User, Role>(options =>
+        .AddIdentityCore<User>(options =>
         {
             options.Password.RequiredLength = 8;
 
@@ -129,6 +129,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
             options.SignIn.RequireConfirmedPhoneNumber = false;
         })
+        .AddRoles<Role>()
+        .AddSignInManager()
         .AddEntityFrameworkStores<ApplicationDbContext>()
         .AddDefaultTokenProviders();
 

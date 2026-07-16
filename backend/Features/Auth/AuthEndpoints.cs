@@ -13,8 +13,8 @@ public sealed class AuthEndpoints : AbstractEndpoint
             .WithTags("Auth");
 
         group.MapPost("register", HandleRegister)
-            .WithValidation<RegisterUserRequest>()
             .RejectIfAuthenticated()
+            .WithValidation<RegisterUserRequest>()
             .WithName("Register")
             .WithSummary("Register a new user")
             .WithDescription("Creates a new user account with the 'User' role. Fails if the email or username is already taken, or if the caller is already authenticated.")
@@ -23,8 +23,8 @@ public sealed class AuthEndpoints : AbstractEndpoint
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPost("login", HandleLogin)
-            .WithValidation<LoginRequest>()
             .RejectIfAuthenticated()
+            .WithValidation<LoginRequest>()
             .WithName("Login")
             .WithSummary("Authenticate a user")
             .WithDescription("Validates credentials and issues a new access/refresh token pair. Each successful login creates a new, independent session, so a user can be logged in from multiple devices at once.")
@@ -34,6 +34,7 @@ public sealed class AuthEndpoints : AbstractEndpoint
             .ProducesProblem(StatusCodes.Status403Forbidden);
 
         group.MapPost("refresh", HandleRefresh)
+            .RejectIfAuthenticated()
             .WithValidation<RefreshTokenRequest>()
             .WithName("Refresh")
             .WithSummary("Rotate an access/refresh token pair")
@@ -43,8 +44,8 @@ public sealed class AuthEndpoints : AbstractEndpoint
             .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         group.MapPost("logout", HandleLogout)
-            .WithValidation<LogoutRequest>()
             .RequireAuthorization()
+            .WithValidation<LogoutRequest>()
             .WithName("Logout")
             .WithSummary("Revoke a single session")
             .WithDescription("Revokes the refresh token for the current device only. Requires a valid access token; the refresh token being revoked must belong to the authenticated caller, otherwise the request is rejected as invalid.")

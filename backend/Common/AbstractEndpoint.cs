@@ -28,7 +28,13 @@ public abstract class AbstractEndpoint
             StatusCodes.Status409Conflict,
             result.Error
         )),
-        { Error.Type: ErrorType.Unauthorized } => Results.Unauthorized(),
+        { Error.Type: ErrorType.Unauthorized } => Results.Problem(
+            ProblemDetailsFactory.CreateProblemDetails(
+                "Unauthorized",
+                StatusCodes.Status401Unauthorized,
+                result.Error
+            )
+        ),
         { Error.Type: ErrorType.Forbidden } => Results.Forbid(),
         _ => Results.BadRequest(ProblemDetailsFactory.CreateProblemDetails(
             "Bad Request",

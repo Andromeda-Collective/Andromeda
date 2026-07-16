@@ -36,7 +36,7 @@ public sealed class TokenService : ITokenService
             issuer: jwtConfig["Issuer"],
             audience: jwtConfig["Audience"],
             claims: claims,
-            expires: DateTime.UtcNow.AddHours(1),
+            expires: DateTime.UtcNow.AddHours(Convert.ToDouble(jwtConfig["TimeoutInMin"])),
             signingCredentials: credentials
         );
 

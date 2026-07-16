@@ -12,8 +12,8 @@ public sealed class RejectAuthenticatedFilter : IEndpointFilter
         if (context.HttpContext.User.Identity?.IsAuthenticated == true)
         {
             return Results.BadRequest(ProblemDetailsFactory.CreateProblemDetails(
-                "Bad Request",
-                StatusCodes.Status400BadRequest,
+                "Conflict",
+                StatusCodes.Status409Conflict,
                 AuthErrors.AlreadyAuthenticated
             ));
         }
