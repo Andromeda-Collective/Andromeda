@@ -5,10 +5,10 @@ namespace Andromeda.Common;
 
 public abstract class AbstractEndpoint
 {
-    public abstract void MapEndpoint(IEndpointRouteBuilder app);
+    public abstract void MapEndpoints(IEndpointRouteBuilder app);
 
 
-    public IResult HandleFailure(Result result) =>
+    public static IResult HandleFailure(Result result) =>
     result switch
     {
         { IsSuccess: true } => throw new InvalidOperationException(),
@@ -28,7 +28,13 @@ public abstract class AbstractEndpoint
             StatusCodes.Status409Conflict,
             result.Error
         )),
-        { Error.Type: ErrorType.Unauthorized } => Results.Unauthorized(),
+        { Error.Type: ErrorType.Unauthorized } => Results.Problem(
+            ProblemDetailsFactory.CreateProblemDetails(
+                "Unauthorized",
+                StatusCodes.Status401Unauthorized,
+                result.Error
+            )
+        ),
         { Error.Type: ErrorType.Forbidden } => Results.Forbid(),
         _ => Results.BadRequest(ProblemDetailsFactory.CreateProblemDetails(
             "Bad Request",

@@ -8,4 +8,8 @@ public static class EndpointFilterExtensions
         this RouteHandlerBuilder builder)
         where TRequest : class
         => builder.AddEndpointFilter<ValidationFilter<TRequest>>();
+
+    public static RouteHandlerBuilder RejectIfAuthenticated(
+        this RouteHandlerBuilder builder)
+        => builder.AddEndpointFilter<RejectAuthenticatedFilter>();
 }
