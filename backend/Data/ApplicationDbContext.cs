@@ -39,6 +39,10 @@ public sealed class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
             .IsRequired();
 
         modelBuilder.Entity<User>()
+            .Property(user => user.ProfileImagePath)
+            .IsRequired();
+
+        modelBuilder.Entity<User>()
             .HasIndex(x => x.NormalizedEmail)
             .IsUnique();
 
@@ -72,36 +76,36 @@ public sealed class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
 
         #region Token
 
-            modelBuilder.Entity<Token>()
-                .ToTable("Tokens");
+        modelBuilder.Entity<Token>()
+            .ToTable("Tokens");
 
-            modelBuilder.Entity<Token>()
-                .Property(token => token.TokenValue)
-                .IsRequired()
-                .HasMaxLength(500);
+        modelBuilder.Entity<Token>()
+            .Property(token => token.TokenValue)
+            .IsRequired()
+            .HasMaxLength(500);
 
-            modelBuilder.Entity<Token>()
-                .Property(token => token.UserId)
-                .IsRequired();
+        modelBuilder.Entity<Token>()
+            .Property(token => token.UserId)
+            .IsRequired();
 
-            modelBuilder.Entity<Token>()
-                .HasIndex(token => token.UserId);
+        modelBuilder.Entity<Token>()
+            .HasIndex(token => token.UserId);
 
-            modelBuilder.Entity<Token>()
-                .HasIndex(token => token.TokenValue)
-                .IsUnique();
+        modelBuilder.Entity<Token>()
+            .HasIndex(token => token.TokenValue)
+            .IsUnique();
 
-            modelBuilder.Entity<Token>()
-                .HasIndex(token => token.ExpiresAt);
+        modelBuilder.Entity<Token>()
+            .HasIndex(token => token.ExpiresAt);
 
-            modelBuilder.Entity<Token>()
-                .HasIndex(token => new { token.UserId, token.IsRevoked });
+        modelBuilder.Entity<Token>()
+            .HasIndex(token => new { token.UserId, token.IsRevoked });
 
-            modelBuilder.Entity<Token>()
-                .HasOne(token => token.User)
-                .WithMany()
-                .HasForeignKey(token => token.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Token>()
+            .HasOne(token => token.User)
+            .WithMany()
+            .HasForeignKey(token => token.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         #endregion
 

@@ -1,4 +1,6 @@
 using Andromeda.Common;
+using Andromeda.Common.Errors;
+using Andromeda.Common.Services.FileStorage;
 using Andromeda.Data;
 using Andromeda.Entities;
 using Andromeda.Enums;
@@ -29,13 +31,13 @@ public sealed class AuthService : IAuthService
         _dbContext = dbContext;
     }
 
-    public async Task<Result> RegisterAsync(RegisterUserRequest request)
+    public async Task<Result> RegisterAsync(RegisterUserRequest request, CancellationToken ct = default)
     {
         if (await _userManager.FindByEmailAsync(request.Email) is not null)
-            return Result.Failure(AuthErrors.EmailAlreadyExists);
+            return CommonErrors.EmailAlreadyExists;
 
         if (await _userManager.FindByNameAsync(request.Username) is not null)
-            return Result.Failure(AuthErrors.UsernameAlreadyExists);
+            return CommonErrors.UsernameAlreadyExists;
 
         var user = new User
         {
@@ -43,72 +45,75 @@ public sealed class AuthService : IAuthService
             Email = request.Email,
             FirstName = request.FirstName,
             LastName = request.LastName,
-            State = UserState.Active
+            State = UserState.Active,
+            ProfileImagePath = ProfileImageDefaults.DefaultImagePath
         };
 
         var identityResult = await _userManager.CreateAsync(user, request.Password);
         if (!identityResult.Succeeded)
-            return Result.Failure(AuthErrors.RegistrationFailed);
+            return CommonErrors.RegistrationFailed;
 
-        await _userManager.AddToRoleAsync(user, "User");
+        await _userManager.AddToRoleAsync(user, Roles.User.ToString());
 
         return Result.Success();
     }
 
-    public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request)
+    public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request, CancellationToken ct = default)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user is null)
-            return Result.Failure<AuthResponse>(AuthErrors.InvalidCredentials);
+            return AuthErrors.InvalidCredentials;
 
         if (user.State != UserState.Active)
-            return Result.Failure<AuthResponse>(AuthErrors.UserNotActive);
+            return AuthErrors.UserNotActive;
 
         var signInResult = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
         if (!signInResult.Succeeded)
         {
             return signInResult.IsLockedOut
-                ? Result.Failure<AuthResponse>(AuthErrors.UserLockedOut)
-                : Result.Failure<AuthResponse>(AuthErrors.InvalidCredentials);
+                ? AuthErrors.UserLockedOut
+                : AuthErrors.InvalidCredentials;
         }
 
 
-        var authResponse = await IssueNewSessionAsync(user);
+        var authResponse = await IssueNewSessionAsync(user, ct);
 
         return Result.Success(authResponse);
     }
 
-    public async Task<Result<AuthResponse>> RefreshAsync(Guid userId, string rawRefreshToken)
+    public async Task<Result<AuthResponse>> RefreshAsync(Guid userId, string rawRefreshToken, CancellationToken ct = default)
     {
         var hashed = _tokenService.HashRefreshToken(rawRefreshToken);
 
         var token = await _dbContext.Tokens
-            .FirstOrDefaultAsync(t => t.TokenValue == hashed);
+            .FirstOrDefaultAsync(t => t.TokenValue == hashed, ct);
 
         if (token is null || token.UserId != userId)
-            return Result.Failure<AuthResponse>(AuthErrors.InvalidRefreshToken);
+            return AuthErrors.InvalidRefreshToken;
 
         if (token.IsRevoked)
-            return Result.Failure<AuthResponse>(AuthErrors.RefreshTokenRevoked);
+            return AuthErrors.RefreshTokenRevoked;
 
         if (token.ExpiresAt < DateTime.UtcNow)
-            return Result.Failure<AuthResponse>(AuthErrors.RefreshTokenExpired);
+            return AuthErrors.RefreshTokenExpired;
 
         var user = await _userManager.FindByIdAsync(token.UserId.ToString());
         if (user is null)
-            return Result.Failure<AuthResponse>(AuthErrors.UserNotFound);
+            return AuthErrors.UserNotFound;
 
         if (user.State != UserState.Active)
-            return Result.Failure<AuthResponse>(AuthErrors.UserNotActive);
+            return AuthErrors.UserNotActive;
 
         var rawNewToken = _tokenService.GenerateRawRefreshToken();
         token.TokenValue = _tokenService.HashRefreshToken(rawNewToken);
         token.ExpiresAt = DateTime.UtcNow.AddDays(30);
         token.UpdatedAt = DateTime.UtcNow;
 
-        var accessToken = _tokenService.GenerateAccessToken(user);
+        var roles = await _userManager.GetRolesAsync(user);
 
-        await _dbContext.SaveChangesAsync();
+        var accessToken = _tokenService.GenerateAccessToken(user, roles);
+
+        await _dbContext.SaveChangesAsync(ct);
 
         return Result.Success(new AuthResponse(
             UserId: user.Id,
@@ -116,31 +121,33 @@ public sealed class AuthService : IAuthService
             RefreshToken: rawNewToken,
             ExpiresAt: token.ExpiresAt,
             Username: user.UserName!,
-            Email: user.Email!
+            Email: user.Email!,
+            Role: roles.First(),
+            ProfileImageUrl: user.ProfileImagePath
         ));
     }
 
-    public async Task<Result> LogoutAsync(string rawRefreshToken, Guid requestingUserId)
+    public async Task<Result> LogoutAsync(string rawRefreshToken, Guid requestingUserId, CancellationToken ct = default)
     {
         var hashed = _tokenService.HashRefreshToken(rawRefreshToken);
 
         var token = await _dbContext.Tokens
-            .FirstOrDefaultAsync(t => t.TokenValue == hashed && !t.IsRevoked);
+            .FirstOrDefaultAsync(t => t.TokenValue == hashed && !t.IsRevoked, ct);
 
 
         if (token is null || token.UserId != requestingUserId)
         {
-            return Result.Failure(AuthErrors.InvalidRefreshToken);
+            return AuthErrors.InvalidRefreshToken;
         }
 
         token.IsRevoked = true;
         token.RevokedAt = DateTime.UtcNow;
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(ct);
 
         return Result.Success();
     }
 
-    private async Task<AuthResponse> IssueNewSessionAsync(User user)
+    private async Task<AuthResponse> IssueNewSessionAsync(User user, CancellationToken ct = default)
     {
         var rawRefreshToken = _tokenService.GenerateRawRefreshToken();
 
@@ -155,15 +162,19 @@ public sealed class AuthService : IAuthService
         };
 
         _dbContext.Tokens.Add(token);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(ct);
+
+        var roles = await _userManager.GetRolesAsync(user);
 
         return new AuthResponse(
             UserId: user.Id,
-            AccessToken: _tokenService.GenerateAccessToken(user),
+            AccessToken: _tokenService.GenerateAccessToken(user, roles),
             RefreshToken: rawRefreshToken,
             ExpiresAt: token.ExpiresAt,
             Username: user.UserName!,
-            Email: user.Email!
+            Email: user.Email!,
+            Role: roles.First(),
+            ProfileImageUrl: user.ProfileImagePath
         );
     }
 }

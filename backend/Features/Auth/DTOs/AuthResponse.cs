@@ -6,5 +6,7 @@ public sealed record AuthResponse(
     string RefreshToken,
     DateTime ExpiresAt,
     string Username,
-    string Email
+    string Email,
+    string Role,
+    string ProfileImageUrl
 );
