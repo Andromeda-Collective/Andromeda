@@ -23,3 +23,8 @@ pnpm-debug.log*
 # ==========================================
 **/*.tsbuildinfo
 **/next-env.d.ts
+
+**/.gitignore
+**/eslint.config.mjs
+**/.prettierrc
+**/package-lock.json

@@ -18,5 +18,7 @@ yarn-error.log*
 
 .vscode
 .idea
+.prettierrc
+eslint.config.mjs
 
 .DS_Store
