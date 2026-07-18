@@ -1,9 +1,14 @@
 using System.Text;
+using Andromeda.Common.Services.Cache;
+using Andromeda.Common.Services.FileStorage;
 using Andromeda.Data;
 using Andromeda.Entities;
+using Andromeda.Enums;
 using Andromeda.Exceptions;
 using Andromeda.Extensions;
 using Andromeda.Features.Auth;
+using Andromeda.Features.Users;
+using Andromeda.Middlewares;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -14,7 +19,18 @@ using Scalar.AspNetCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
-
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Default", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:3000",
+                "https://localhost:3000"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 #region Serilog
 
@@ -83,7 +99,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOrOwner", p => p.RequireRole(nameof(Roles.Admin), nameof(Roles.Owner)));
+    options.AddPolicy("OwnerOnly", p => p.RequireRole(nameof(Roles.Owner)));
+});
 
 #endregion
 
@@ -98,48 +118,66 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 #region ExceptionHandler
 
-    builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 #endregion
 
 #region Add FluentValidation Validators
-    builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
+builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 #endregion
 
 #region Add Identity
-    
-    builder.Services
-        .AddIdentityCore<User>(options =>
-        {
-            options.Password.RequiredLength = 8;
 
-            options.Password.RequireDigit = false;
+builder.Services
+    .AddIdentityCore<User>(options =>
+    {
+        options.Password.RequiredLength = 8;
 
-            options.Password.RequireUppercase = false;
+        options.Password.RequireDigit = false;
 
-            options.Password.RequireLowercase = false;
+        options.Password.RequireUppercase = false;
 
-            options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequireLowercase = false;
 
-            options.User.RequireUniqueEmail = true;
+        options.Password.RequireNonAlphanumeric = false;
 
-            options.SignIn.RequireConfirmedAccount = false;
+        options.User.RequireUniqueEmail = true;
 
-            options.SignIn.RequireConfirmedEmail = false;
+        options.SignIn.RequireConfirmedAccount = false;
 
-            options.SignIn.RequireConfirmedPhoneNumber = false;
-        })
-        .AddRoles<Role>()
-        .AddSignInManager()
-        .AddEntityFrameworkStores<ApplicationDbContext>()
-        .AddDefaultTokenProviders();
+        options.SignIn.RequireConfirmedEmail = false;
+
+        options.SignIn.RequireConfirmedPhoneNumber = false;
+    })
+    .AddRoles<Role>()
+    .AddSignInManager()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
+
+#endregion
+
+#region Redis Cache
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Cache");
+});
+
+builder.Services.AddScoped<IUserCacheService, RedisUserCacheService>();
+
+#endregion
+
+#region File Storage
+
+builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 
 #endregion
 
 #region Add Services
-    
-    builder.Services.AddScoped<IAuthService, AuthService>();
-    builder.Services.AddScoped<ITokenService, TokenService>();
+
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 #endregion
 
@@ -163,14 +201,17 @@ if (app.Environment.IsDevelopment())
             .SortOperationsByMethod();
     });
 }
-
+app.UseCors("Default");
 app.UseSerilogRequestLogging();
 
 
 app.UseHttpsRedirection();
 
+app.UseStaticFiles();
 
 app.UseAuthentication();
+
+app.UseMiddleware<UserStatusMiddleware>();
 
 app.UseAuthorization();
 

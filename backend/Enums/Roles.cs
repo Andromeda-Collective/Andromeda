@@ -1,8 +1,8 @@
-
 namespace Andromeda.Enums;
 
 public enum Roles
 {
+    User,
     Admin,
-    User
+    Owner
 }

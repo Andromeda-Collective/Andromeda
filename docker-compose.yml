@@ -13,6 +13,8 @@ services:
         condition: service_healthy
       andromeda.cache:
         condition: service_healthy
+    volumes:
+      - ./.containers/profile-images:/app/wwwroot/uploads/profile-images
     environment:
       - ConnectionStrings__Database=Host=andromeda.database;Port=5432;Database=${DB_DATABASE};Username=${DB_USER};Password=${DB_PASSWORD};Include Error Detail=true
       - ConnectionStrings__Cache=andromeda.cache:6379,password=${CACHE_PASSWORD}

@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using Andromeda.Enums;
 
 namespace Andromeda.Extensions;
 
@@ -17,4 +18,7 @@ public static class ClaimsPrincipalExtensions
 
         return userId;
     }
+
+        public static string GetRole(this ClaimsPrincipal principal)
+        => principal.FindFirstValue(ClaimTypes.Role) ?? nameof(Roles.User);
 }

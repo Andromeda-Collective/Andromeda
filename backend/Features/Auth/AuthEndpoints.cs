@@ -18,7 +18,7 @@ public sealed class AuthEndpoints : AbstractEndpoint
             .WithName("Register")
             .WithSummary("Register a new user")
             .WithDescription("Creates a new user account with the 'User' role. Fails if the email or username is already taken, or if the caller is already authenticated.")
-            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status204NoContent)
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status409Conflict);
 
@@ -49,27 +49,29 @@ public sealed class AuthEndpoints : AbstractEndpoint
             .WithName("Logout")
             .WithSummary("Revoke a single session")
             .WithDescription("Revokes the refresh token for the current device only. Requires a valid access token; the refresh token being revoked must belong to the authenticated caller, otherwise the request is rejected as invalid.")
-            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status204NoContent)
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status401Unauthorized);
     }
 
     private static async Task<IResult> HandleRegister(
         RegisterUserRequest request,
-        IAuthService authService)
+        IAuthService authService,
+        CancellationToken ct)
     {
-        var result = await authService.RegisterAsync(request);
+        var result = await authService.RegisterAsync(request, ct);
 
         return result.IsSuccess
-            ? Results.Ok()
+            ? Results.NoContent()
             : HandleFailure(result);
     }
 
     private static async Task<IResult> HandleLogin(
         LoginRequest request,
-        IAuthService authService)
+        IAuthService authService,
+        CancellationToken ct)
     {
-        var result = await authService.LoginAsync(request);
+        var result = await authService.LoginAsync(request, ct);
 
         return result.IsSuccess
             ? Results.Ok(result.Value)
@@ -78,9 +80,10 @@ public sealed class AuthEndpoints : AbstractEndpoint
 
     private static async Task<IResult> HandleRefresh(
         RefreshTokenRequest request,
-        IAuthService authService)
+        IAuthService authService,
+        CancellationToken ct)
     {
-        var result = await authService.RefreshAsync(request.UserId, request.RefreshToken);
+        var result = await authService.RefreshAsync(request.UserId, request.RefreshToken, ct);
 
         return result.IsSuccess
             ? Results.Ok(result.Value)
@@ -90,14 +93,15 @@ public sealed class AuthEndpoints : AbstractEndpoint
     private static async Task<IResult> HandleLogout(
         LogoutRequest request,
         ClaimsPrincipal user,
-        IAuthService authService)
+        IAuthService authService,
+        CancellationToken ct)
     {
         var userId = user.GetUserId();
 
-        var result = await authService.LogoutAsync(request.RefreshToken, userId);
+        var result = await authService.LogoutAsync(request.RefreshToken, userId, ct);
 
         return result.IsSuccess
-            ? Results.Ok()
+            ? Results.NoContent()
             : HandleFailure(result);
     }
 }
