@@ -1,5 +1,6 @@
 using System.Text;
 using Andromeda.Common.Services.Cache;
+using Andromeda.Common.Services.Cache.User;
 using Andromeda.Common.Services.FileStorage;
 using Andromeda.Data;
 using Andromeda.Entities;
@@ -163,7 +164,8 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.Configuration = builder.Configuration.GetConnectionString("Cache");
 });
 
-builder.Services.AddScoped<IUserCacheService, RedisUserCacheService>();
+builder.Services.AddScoped<ICacheService, RedisCacheService>();
+builder.Services.AddScoped<IUserCacheService, UserCacheService>();
 
 #endregion
 

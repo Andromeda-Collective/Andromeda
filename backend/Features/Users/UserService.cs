@@ -2,6 +2,7 @@ using Andromeda.Common;
 using Andromeda.Common.Errors;
 using Andromeda.Common.Pagination;
 using Andromeda.Common.Services.Cache;
+using Andromeda.Common.Services.Cache.User;
 using Andromeda.Common.Services.FileStorage;
 using Andromeda.Data;
 using Andromeda.Entities;
